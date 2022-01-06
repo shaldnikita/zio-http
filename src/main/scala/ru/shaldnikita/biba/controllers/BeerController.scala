@@ -25,7 +25,14 @@ object BeerController {
     private def getBeer = Http.collectM[Request] {
       case Method.GET -> !! / "beer" => for {
         beer <- BeerService.getBeer()
-      } yield Response.json(BeerResponse(beer).asJson.noSpaces)
+        // https://github.com/dream11/zio-http/blob/v1.0.0.0-RC21/zio-http/src/main/scala/zhttp/http/Response.scala#L145 - багуля
+      } yield Response(
+        Status.OK,
+        Headers(HeaderNames.contentType, HeaderValues.applicationJson),
+        HttpData.fromString(
+          BeerResponse(beer).asJson.noSpaces
+        )
+      )
     }
 
     private def addBeer = Http.collectM[Request] {
