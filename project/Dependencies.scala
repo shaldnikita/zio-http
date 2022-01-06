@@ -13,15 +13,17 @@ object Dependencies {
     "io.circe" %% "circe-core",
     "io.circe" %% "circe-generic",
     "io.circe" %% "circe-parser"
-  ).map(_ % circeVersion)
+  ).map(_ % CirceVersion)
 
   lazy val httpServer = Seq(
-    "io.d11" %% "zhttp" % "1.0.0.0-RC21",
-    "io.d11" %% "zhttp-test" % "1.0.0.0-RC21" % Test
+    "com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion,
+    "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
+    "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
+    "de.heikoseeberger" %% "akka-http-circe" % AkkaHttpJsonVersion
   )
   lazy val tapir = Seq(
     "com.softwaremill.sttp.tapir" %% "tapir-core" % TapirVersion,
-    "com.softwaremill.sttp.tapir" %% "tapir-zio" % TapirVersion
+    "com.softwaremill.sttp.tapir" %% "tapir-akka-http-server" % TapirVersion
   )
   /* lazy val akka = Seq(
      "com.typesafe.akka" %% "akka-actor-typed" % AkkaVersion,

@@ -1,48 +1,38 @@
 package ru.shaldnikita.biba.controllers
 
+import akka.http.scaladsl.server.Directives._
+import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe.parser._
 import io.circe.syntax.EncoderOps
+import ru.shaldnikita.biba.controllers.protocol.marshallers.ZIOMarshallers
 import ru.shaldnikita.biba.controllers.protocol.{AddBeerRequest, BeerResponse}
 import ru.shaldnikita.biba.service.BeerService
-import zhttp.http._
 import zio.macros.accessible
 import zio.{Has, UIO, ULayer, ZIO, ZLayer}
 
 
 @accessible
-object BeerController {
+object BeerController extends FailFastCirceSupport with ZIOMarshallers {
 
   type Controller = Has[Service]
 
   trait Service {
-    def route: UIO[Http[Has[BeerService.Service], Throwable, Request, Response[Any, Nothing]]]
+    def route: Route
   }
 
   val live: ULayer[Controller] = ZLayer.succeed(new Service {
 
-    override def route = UIO.succeed(getBeer <> addBeer)
 
-    private def getBeer = Http.collectM[Request] {
-      case Method.GET -> !! / "beer" => for {
-        beer <- BeerService.getBeer()
-        // https://github.com/dream11/zio-http/blob/v1.0.0.0-RC21/zio-http/src/main/scala/zhttp/http/Response.scala#L145 - багуля
-      } yield Response(
-        Status.OK,
-        Headers(HeaderNames.contentType, HeaderValues.applicationJson),
-        HttpData.fromString(
-          BeerResponse(beer).asJson.noSpaces
-        )
-      )
+
+    override def route = path("beer"){
+      (post & entity(as[AddBeerRequest])) { addBeer =>
+          BeerService.addBeer(AddBeerRequest.toBeer(addBeer))
+      } ~
+        get {
+          BeerService.getBeer()
+        }
     }
 
-    private def addBeer = Http.collectM[Request] {
-      case req@Method.POST -> !! / "beer" =>
-        for {
-          addBeerE <- req.getBodyAsString.map(decode[AddBeerRequest])
-          addBeer <- ZIO.fromEither(addBeerE)
-          result <- BeerService.addBeer(AddBeerRequest.toBeer(addBeer))
-        } yield Response.json(result.asJson.noSpaces)
-    }
   }
   )
 
